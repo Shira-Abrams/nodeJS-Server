@@ -1,46 +1,38 @@
-const express = require('express');
+const bcrypt=require('bcrypt');
+const {User}=require('../models/user.models');
+const user = require('../router/user.route');
+// const user=express.Router()
+// const {users} =require('../user')
+exports.sinIn=async(req,res,next)=>{
+    const {email,password}=req.body;
+    const user=await User.findOne({email})
+    if(user){
+        bcrypt.compare(password,user.password,(err,same)=>{
+            if(err)
+            return next(new Error(err.message))
+            if(same)
+            {
+             return res.send({user})
 
-const user=express.Router()
-const {users} =require('../user')
-user.get("/",(req,res)=>{
- 
-    res.send(users)
-});
+            }
+            //מחזיר תשובה כללית של לא מורשה 
+            //כי כך מאובטח יותר
+            //ואת הסיסמא המוצפנת מתוך הדטהבייס
+            next({message:'Auth Failed', status: 401})
+        })
+    }
+}
+exports.signUp=async(req,res,next)=>{
+    const{username,email,password}=req.body;
+    //
+    try {
+        const user=new user({username,email,password})
+        await user.save();//pre קודם הולך לפעולה
+        //שם מוצפנת הסיסמא 
+        //................
+        return res.status(201).json(user.user)
+    } catch (error) {
+        return next({ message: error.message, status: 409 })
 
-user.post("/singup",(req,res,next)=>{
-    const  userPasswored=req.body.password;
-    const logedUser=users.find(x=>x.password==userPasswored)
-    if(logedUser)
-    res.send(logedUser)
-    res.status(404).send('didnt found user')
-
-
-})
-
-user.post("/",(req,res,next)=>{
-    const newUser=req.body;
-    console.log(newUser);
-    let lastId=users[users.length-1].id+1
-    if(isNaN(lastId))
-      lastId=100
-      newUser.id=lastId;
-      users.push(newUser)
-      res.status(201).send(newUser)
-})
-user.put("/:id" ,(req,res)=>{
-     const id=+req.params.id;
-     if(id!=req.body.id)
-       res.status(409).json({error:'make sure the id user are similar'})
-       const updateUser=users.find(x=>x.id==id)
-       if(updateUser)
-       {
-            updateUser.email=req.body.email||updateUser.email;
-            updateUser.password=req.body.password||updateUser.email;
-            updateUser.name=req.body.name||updateUser.name
-            res.send(updateUser)
-
-       }
-       res.status(404).json({error:'user not found'})
-
-})
-module.exports=user
+    }
+}

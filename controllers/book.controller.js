@@ -2,10 +2,10 @@
 
 // const user=express.Router()
 // const {users} =require('../user')
-const { default: mongoose } = require('mongoose');
+const mongoose = require('mongoose')
 const {Book}=require('../models/book.models');
-const book = require('../router/book.route');
-exports.GetAllBook=async(req,async,next)=>{
+// const book = require('../router/book.route');
+exports.GetAllBook=async(req,res,next)=>{
     try {
         const books=await Book.find().select('-__v')
         return res.json(books)
@@ -15,7 +15,8 @@ exports.GetAllBook=async(req,async,next)=>{
 }
 
 exports.GetBookById=(req,res,next)=>{
-    const id=+req.body.id
+    const id=req.params.id
+    console.log(mongoose.Types.ObjectId.isValid(id));
     if(!mongoose.Types.ObjectId.isValid(id))
     next({ message: 'id is not valid' })
     else{
@@ -40,8 +41,8 @@ exports.AddBook=async(req,res,next)=>{
     }
 }
 exports.UpdateBook=async(req,res,next)=>{
-    const id=req.body.id;
-    if(!mongoose.ObjectId.isValid(id))
+    const id=req.params.id;
+    if(!mongoose.Types.ObjectId.isValid(id))
     next({message:'id is not valid'})
 try {
     const b=await Book.findByIdAndUpdate(
@@ -56,11 +57,11 @@ try {
 }
 exports.DeleteBook=async(req,res,next)=>{
     const id=req.body.id;
-    if(!mongoose.ObjectId.isValid(id))
+    if(!mongoose.Types.ObjectId.isValid(id))
     next({message:'id is not alid'})
 else{
     try {
-         if(!( Book.findById(id)))
+         if(!(await Book.findById(id)))
            return next({message:'book not found',status:404})
         //if book exsit delete it from the db
         await Book.findByIdAndDelete(id)
